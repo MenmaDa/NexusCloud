@@ -1,0 +1,51 @@
+const API_URL = "http://localhost:8080/api/productos-servicios";
+
+async function manejarRespuesta(respuesta) {
+  if (!respuesta.ok) {
+    const mensaje = await respuesta.text();
+    throw new Error(mensaje || "The request could not be completed");
+  }
+
+  if (respuesta.status === 204) {
+    return null;
+  }
+
+  return respuesta.json();
+}
+
+export async function listarProductosServicios() {
+  const respuesta = await fetch(API_URL);
+  return manejarRespuesta(respuesta);
+}
+
+export async function crearProductoServicio(productoServicio) {
+  const respuesta = await fetch(API_URL, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json"
+    },
+    body: JSON.stringify(productoServicio)
+  });
+
+  return manejarRespuesta(respuesta);
+}
+
+export async function actualizarProductoServicio(id, productoServicio) {
+  const respuesta = await fetch(`${API_URL}/${id}`, {
+    method: "PUT",
+    headers: {
+      "Content-Type": "application/json"
+    },
+    body: JSON.stringify(productoServicio)
+  });
+
+  return manejarRespuesta(respuesta);
+}
+
+export async function eliminarProductoServicio(id) {
+  const respuesta = await fetch(`${API_URL}/${id}`, {
+    method: "DELETE"
+  });
+
+  return manejarRespuesta(respuesta);
+}
