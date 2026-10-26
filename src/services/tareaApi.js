@@ -1,14 +1,16 @@
+import { apiFetch } from "./apiFetch";
+
 const API_URL = "http://localhost:8080/api/tareas";
 
 async function manejarRespuesta(response) {
   if (!response.ok) {
-    let mensaje = "No fue possible to complete the operation.";
+    let mensaje = "Could not complete the operation.";
 
     try {
       const error = await response.json();
       mensaje = error.message || mensaje;
     } catch {
-      // La API no devolvió un JSON de error.
+      // La API no devolvió detalle.
     }
 
     throw new Error(mensaje);
@@ -22,11 +24,17 @@ async function manejarRespuesta(response) {
 }
 
 export async function listarTareas() {
-  return manejarRespuesta(await fetch(API_URL));
+  return manejarRespuesta(await apiFetch(API_URL));
+}
+
+export async function listarMisTareas() {
+  return manejarRespuesta(
+    await apiFetch(`${API_URL}/mis-tareas`)
+  );
 }
 
 export async function crearTarea(tarea) {
-  return manejarRespuesta(await fetch(API_URL, {
+  return manejarRespuesta(await apiFetch(API_URL, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(tarea)
@@ -34,7 +42,7 @@ export async function crearTarea(tarea) {
 }
 
 export async function actualizarTarea(id, tarea) {
-  return manejarRespuesta(await fetch(`${API_URL}/${id}`, {
+  return manejarRespuesta(await apiFetch(`${API_URL}/${id}`, {
     method: "PUT",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(tarea)
@@ -42,7 +50,17 @@ export async function actualizarTarea(id, tarea) {
 }
 
 export async function eliminarTarea(id) {
-  return manejarRespuesta(await fetch(`${API_URL}/${id}`, {
+  return manejarRespuesta(await apiFetch(`${API_URL}/${id}`, {
     method: "DELETE"
   }));
+}
+
+export async function actualizarMiProgreso(id, progreso) {
+  return manejarRespuesta(
+    await apiFetch(`${API_URL}/${id}/mi-progreso`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(progreso)
+    })
+  );
 }

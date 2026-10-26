@@ -1,3 +1,5 @@
+import { apiFetch } from "./apiFetch";
+
 const API_URL = "http://localhost:8080/api/proyectos";
 
 async function manejarRespuesta(response) {
@@ -22,11 +24,11 @@ async function manejarRespuesta(response) {
 }
 
 export async function listarProyectos() {
-  return manejarRespuesta(await fetch(API_URL));
+  return manejarRespuesta(await apiFetch(API_URL));
 }
 
 export async function crearProyecto(proyecto) {
-  return manejarRespuesta(await fetch(API_URL, {
+  return manejarRespuesta(await apiFetch(API_URL, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(proyecto)
@@ -34,7 +36,7 @@ export async function crearProyecto(proyecto) {
 }
 
 export async function actualizarProyecto(id, proyecto) {
-  return manejarRespuesta(await fetch(`${API_URL}/${id}`, {
+  return manejarRespuesta(await apiFetch(`${API_URL}/${id}`, {
     method: "PUT",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(proyecto)
@@ -42,7 +44,7 @@ export async function actualizarProyecto(id, proyecto) {
 }
 
 export async function eliminarProyecto(id) {
-  return manejarRespuesta(await fetch(`${API_URL}/${id}`, {
+  return manejarRespuesta(await apiFetch(`${API_URL}/${id}`, {
     method: "DELETE"
   }));
 }

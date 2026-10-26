@@ -3,10 +3,21 @@ import React from "react";
 import Chartist from "react-chartist";
 import ChartistTooltip from 'chartist-plugin-tooltips-updated';
 
-export const SalesValueChart = () => {
-  const data = {
-    labels: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'],
-    series: [[1, 2, 2, 3, 3, 4, 3]]
+const formatearDineroCompacto = (valor) =>
+  new Intl.NumberFormat("es-CO", {
+    style: "currency",
+    currency: "COP",
+    notation: "compact",
+    maximumFractionDigits: 1
+  }).format(Number(valor) || 0);
+
+
+export const SalesValueChart = ({ data = [] }) => {
+  const datosGrafica = {
+    labels: data.map((dato) => dato.etiqueta),
+    series: [
+      data.map((dato) => Number(dato.total) || 0)
+    ]
   };
 
   const options = {
@@ -14,30 +25,38 @@ export const SalesValueChart = () => {
     showArea: true,
     fullWidth: true,
     axisX: {
-      position: 'end',
+      position: "end",
       showGrid: true
     },
     axisY: {
-      // On the y-axis start means left and end means right
       showGrid: false,
-      showLabel: false,
-      labelInterpolationFnc: value => `$${value / 1}k`
+      showLabel: false
     }
   };
 
   const plugins = [
-    ChartistTooltip()
-  ]
+    ChartistTooltip({
+      transformTooltipTextFnc: (valor) => formatearDineroCompacto(valor)
+    })
+  ];
 
   return (
-    <Chartist data={data} options={{...options, plugins}} type="Line" className="ct-series-g ct-double-octave" />
+    <Chartist
+      data={datosGrafica}
+      options={{ ...options, plugins }}
+      type="Line"
+      className="ct-series-g ct-double-octave"
+    />
   );
 };
 
-export const SalesValueChartphone = () => {
-  const data = {
-    labels: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'],
-    series: [[1, 2, 2, 3, 3, 4, 3]]
+
+export const SalesValueChartphone = ({ data = [] }) => {
+  const datosGrafica = {
+    labels: data.map((dato) => dato.etiqueta),
+    series: [
+      data.map((dato) => Number(dato.total) || 0)
+    ]
   };
 
   const options = {
@@ -45,23 +64,28 @@ export const SalesValueChartphone = () => {
     showArea: true,
     fullWidth: false,
     axisX: {
-      position: 'end',
+      position: "end",
       showGrid: true
     },
     axisY: {
-      // On the y-axis start means left and end means right
       showGrid: false,
-      showLabel: false,
-      labelInterpolationFnc: value => `$${value / 1}k`
+      showLabel: false
     }
   };
 
   const plugins = [
-    ChartistTooltip()
-  ]
+    ChartistTooltip({
+      transformTooltipTextFnc: (valor) => formatearDineroCompacto(valor)
+    })
+  ];
 
   return (
-    <Chartist data={data} options={{...options, plugins}} type="Line" className="ct-series-g ct-major-tenth" />
+    <Chartist
+      data={datosGrafica}
+      options={{ ...options, plugins }}
+      type="Line"
+      className="ct-series-g ct-major-tenth"
+    />
   );
 };
 

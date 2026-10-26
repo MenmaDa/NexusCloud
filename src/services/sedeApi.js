@@ -1,3 +1,4 @@
+import { apiFetch } from "./apiFetch";
 const API_URL = "http://localhost:8080/api/sedes";
 
 async function manejarRespuesta(response) {
@@ -22,11 +23,11 @@ async function manejarRespuesta(response) {
 }
 
 export async function listarSedes() {
-  return manejarRespuesta(await fetch(API_URL));
+  return manejarRespuesta(await apiFetch(API_URL));
 }
 
 export async function crearSede(sede) {
-  return manejarRespuesta(await fetch(API_URL, {
+  return manejarRespuesta(await apiFetch(API_URL, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(sede)
@@ -34,7 +35,7 @@ export async function crearSede(sede) {
 }
 
 export async function actualizarSede(id, sede) {
-  return manejarRespuesta(await fetch(`${API_URL}/${id}`, {
+  return manejarRespuesta(await apiFetch(`${API_URL}/${id}`, {
     method: "PUT",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(sede)
@@ -42,7 +43,7 @@ export async function actualizarSede(id, sede) {
 }
 
 export async function eliminarSede(id) {
-  return manejarRespuesta(await fetch(`${API_URL}/${id}`, {
+  return manejarRespuesta(await apiFetch(`${API_URL}/${id}`, {
     method: "DELETE"
   }));
 }

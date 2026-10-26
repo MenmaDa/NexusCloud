@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Route, Switch, Redirect } from "react-router-dom";
 import { Routes } from "../routes";
-
+import { estaAutenticado } from "../services/authApi";
 // pages
 import Upgrade from "./Upgrade";
 import DashboardOverview from "./dashboard/DashboardOverview";
@@ -49,11 +49,10 @@ import Tooltips from "./components/Tooltips";
 import Toasts from "./components/Toasts";
 
 import {
-  BillingPage,
   ResourcesPage,
   InfrastructurePage,
-  RecommendationsPage,
-  AdministrationPage
+  AdministrationPage,
+  RecommendationsPage
 } from "./erp/ErpModules";
 import ProductsServicesPage from "./erp/ProductsServicesPage";
 import ClientsPage from "./erp/ClientsPage";
@@ -63,6 +62,14 @@ import ProjectsPage from "./erp/ProjectsPage";
 import TasksPage from "./erp/TasksPage";
 import EmployeesPage from "./erp/EmployeesPage";
 import BranchesPage from "./erp/BranchesPage";
+import RolesPage from "./erp/RolesPage";
+import UsersPage from "./erp/UsersPage";
+import MyTasksPage from "./erp/MyTasksPage";
+import NotificationsPage from "./erp/NotificationsPage";
+import BillingPage from "./erp/BillingPage";
+import PaymentsPage from "./erp/PaymentsPage";
+import ReportsPage from "./erp/ReportsPage";
+
 
 const RouteWithLoader = ({ component: Component, ...rest }) => {
   const [loaded, setLoaded] = useState(false);
@@ -82,33 +89,49 @@ const RouteWithSidebar = ({ component: Component, ...rest }) => {
 
   useEffect(() => {
     const timer = setTimeout(() => setLoaded(true), 1000);
+
     return () => clearTimeout(timer);
   }, []);
 
   const localStorageIsSettingsVisible = () => {
-    return localStorage.getItem('settingsVisible') === 'false' ? false : true
-  }
+    return localStorage.getItem("settingsVisible") === "false"
+      ? false
+      : true;
+  };
 
-  const [showSettings, setShowSettings] = useState(localStorageIsSettingsVisible);
+  const [showSettings, setShowSettings] = useState(
+    localStorageIsSettingsVisible
+  );
 
   const toggleSettings = () => {
     setShowSettings(!showSettings);
-    localStorage.setItem('settingsVisible', !showSettings);
-  }
+    localStorage.setItem("settingsVisible", !showSettings);
+  };
 
   return (
-    <Route {...rest} render={props => (
-      <>
-        <Preloader show={loaded ? false : true} />
-        <Sidebar />
+    <Route
+      {...rest}
+      render={(props) => {
+        if (!estaAutenticado()) {
+          return <Redirect to={Routes.Signin.path} />;
+        }
 
-        <main className="content">
-          <Navbar />
-          <Component {...props} />
-          <Footer toggleSettings={toggleSettings} showSettings={showSettings} />
-        </main>
-      </>
-    )}
+        return (
+          <>
+            <Preloader show={!loaded} />
+            <Sidebar />
+
+            <main className="content">
+              <Navbar />
+              <Component {...props} />
+              <Footer
+                toggleSettings={toggleSettings}
+                showSettings={showSettings}
+              />
+            </main>
+          </>
+        );
+      }}
     />
   );
 };
@@ -116,10 +139,19 @@ const RouteWithSidebar = ({ component: Component, ...rest }) => {
 export default () => (
   <Switch>
     {/* Redirect root URL to the ERP dashboard */}
-    <Redirect
+    {/* Root URL: login if no session; dashboard if authenticated */}
+    <Route
       exact
-      from={Routes.Presentation.path}
-      to={Routes.DashboardOverview.path}
+      path={Routes.Presentation.path}
+      render={() => (
+        <Redirect
+          to={
+            estaAutenticado()
+              ? Routes.DashboardOverview.path
+              : Routes.Signin.path
+          }
+        />
+      )}
     />
 
     {/* Public pages without sidebar */}
@@ -147,12 +179,22 @@ export default () => (
       component={ServerError}
     />
 
+    <RouteWithSidebar exact path={Routes.Roles.path} component={RolesPage} />
+    <RouteWithSidebar exact path={Routes.Usuarios.path} component={UsersPage} />
+
     {/* ERP pages with sidebar */}
     <RouteWithSidebar
       exact
       path={Routes.DashboardOverview.path}
       component={DashboardOverview}
     />
+
+    <RouteWithSidebar
+      exact
+      path={Routes.Reportes.path}
+      component={ReportsPage}
+    />
+
     <RouteWithSidebar
       exact
       path={Routes.Clientes.path}
@@ -162,6 +204,18 @@ export default () => (
       exact
       path={Routes.ContactosClientes.path}
       component={ClientContactsPage}
+    />
+
+    <RouteWithSidebar
+      exact
+      path={Routes.MisTareas.path}
+      component={MyTasksPage}
+    />
+
+    <RouteWithSidebar
+      exact
+      path={Routes.Notificaciones.path}
+      component={NotificationsPage}
     />
 
     <RouteWithSidebar
@@ -186,6 +240,12 @@ export default () => (
       exact
       path={Routes.Facturas.path}
       component={BillingPage}
+    />
+
+    <RouteWithSidebar
+      exact
+      path={Routes.Pagos.path}
+      component={PaymentsPage}
     />
 
     <RouteWithSidebar
@@ -229,6 +289,8 @@ export default () => (
       path={Routes.Administracion.path}
       component={AdministrationPage}
     />
+
+
 
     {/* Template components */}
     <RouteWithSidebar exact path={Routes.Accordions.path} component={Accordion} />

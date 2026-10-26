@@ -67,30 +67,10 @@ export const BillingPage = () => (
   />
 );
 
-export const ResourcesPage = () => (
-  <ModulePage
-    title="Resources"
-    description="Manage employees, capacity, and workload."
-  />
-);
+export { default as ResourcesPage } from "./ResourcesPage";
 
-export const InfrastructurePage = () => (
-  <ModulePage
-    title="Infrastructure"
-    description="Manage network devices, cloud services, and incidents."
-  />
-);
+export { default as InfrastructurePage } from "./InfrastructurePage";
 
-export const RecommendationsPage = () => (
-  <ModulePage
-    title="Recommendations"
-    description="Generate product and service recommendations for clients."
-  />
-);
+export { default as RecommendationsPage } from "./RecommendationsPage";
 
-export const AdministrationPage = () => (
-  <ModulePage
-    title="Administration"
-    description="Manage users, roles, permissions, notifications, and audit logs."
-  />
-);
+export { default as AdministrationPage } from "./AdministrationPage";

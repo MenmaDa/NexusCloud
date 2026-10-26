@@ -1,3 +1,4 @@
+import { apiFetch } from "./apiFetch";
 const API_URL = "http://localhost:8080/api/productos-servicios";
 
 async function manejarRespuesta(respuesta) {
@@ -14,12 +15,12 @@ async function manejarRespuesta(respuesta) {
 }
 
 export async function listarProductosServicios() {
-  const respuesta = await fetch(API_URL);
+  const respuesta = await apiFetch(API_URL);
   return manejarRespuesta(respuesta);
 }
 
 export async function crearProductoServicio(productoServicio) {
-  const respuesta = await fetch(API_URL, {
+  const respuesta = await apiFetch(API_URL, {
     method: "POST",
     headers: {
       "Content-Type": "application/json"
@@ -31,7 +32,7 @@ export async function crearProductoServicio(productoServicio) {
 }
 
 export async function actualizarProductoServicio(id, productoServicio) {
-  const respuesta = await fetch(`${API_URL}/${id}`, {
+  const respuesta = await apiFetch(`${API_URL}/${id}`, {
     method: "PUT",
     headers: {
       "Content-Type": "application/json"
@@ -43,7 +44,7 @@ export async function actualizarProductoServicio(id, productoServicio) {
 }
 
 export async function eliminarProductoServicio(id) {
-  const respuesta = await fetch(`${API_URL}/${id}`, {
+  const respuesta = await apiFetch(`${API_URL}/${id}`, {
     method: "DELETE"
   });
 

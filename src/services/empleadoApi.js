@@ -1,3 +1,4 @@
+import { apiFetch } from "./apiFetch";
 const API_URL = "http://localhost:8080/api/empleados";
 
 async function manejarRespuesta(response) {
@@ -22,11 +23,11 @@ async function manejarRespuesta(response) {
 }
 
 export async function listarEmpleados() {
-  return manejarRespuesta(await fetch(API_URL));
+  return manejarRespuesta(await apiFetch(API_URL));
 }
 
 export async function crearEmpleado(empleado) {
-  return manejarRespuesta(await fetch(API_URL, {
+  return manejarRespuesta(await apiFetch(API_URL, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(empleado)
@@ -34,7 +35,7 @@ export async function crearEmpleado(empleado) {
 }
 
 export async function actualizarEmpleado(id, empleado) {
-  return manejarRespuesta(await fetch(`${API_URL}/${id}`, {
+  return manejarRespuesta(await apiFetch(`${API_URL}/${id}`, {
     method: "PUT",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(empleado)
@@ -42,7 +43,7 @@ export async function actualizarEmpleado(id, empleado) {
 }
 
 export async function eliminarEmpleado(id) {
-  return manejarRespuesta(await fetch(`${API_URL}/${id}`, {
+  return manejarRespuesta(await apiFetch(`${API_URL}/${id}`, {
     method: "DELETE"
   }));
 }

@@ -1,3 +1,5 @@
+import { apiFetch } from "./apiFetch";
+
 const API_URL = "http://localhost:8080/api/contratos";
 
 async function manejarRespuesta(response) {
@@ -22,12 +24,12 @@ async function manejarRespuesta(response) {
 }
 
 export async function listarContratos() {
-  const response = await fetch(API_URL);
+  const response = await apiFetch(API_URL);
   return manejarRespuesta(response);
 }
 
 export async function crearContrato(contrato) {
-  const response = await fetch(API_URL, {
+  const response = await apiFetch(API_URL, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(contrato)
@@ -37,7 +39,7 @@ export async function crearContrato(contrato) {
 }
 
 export async function actualizarContrato(id, contrato) {
-  const response = await fetch(`${API_URL}/${id}`, {
+  const response = await apiFetch(`${API_URL}/${id}`, {
     method: "PUT",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(contrato)
@@ -47,7 +49,7 @@ export async function actualizarContrato(id, contrato) {
 }
 
 export async function eliminarContrato(id) {
-  const response = await fetch(`${API_URL}/${id}`, {
+  const response = await apiFetch(`${API_URL}/${id}`, {
     method: "DELETE"
   });
 

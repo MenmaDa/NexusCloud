@@ -2,8 +2,9 @@
 export const Routes = {
     // pages
     Presentation: { path: "/" },
+    Signin: { path: "/examples/sign-in" },
     DashboardOverview: { path: "/dashboard/overview" },
-
+    Reportes: { path: "/reportes" },
     Clientes: { path: "/clientes" },
     ContactosClientes: { path: "/contactos-clientes" },
     Proyectos: { path: "/proyectos" },
@@ -17,6 +18,12 @@ export const Routes = {
     Infraestructura: { path: "/infraestructura" },
     Recomendaciones: { path: "/recomendaciones" },
     Administracion: { path: "/administracion" },
+    Roles: { path: "/roles" },
+    Usuarios: { path: "/usuarios" },
+    MisTareas: { path: "/mis-tareas" },
+    Notificaciones: { path: "/notificaciones" },
+    Pagos: { path: "/pagos" },
+    
 
     Transactions: { path: "/transactions" },
     Settings: { path: "/settings" },
@@ -24,7 +31,6 @@ export const Routes = {
     BootstrapTables: { path: "/tables/bootstrap-tables" },
     Billing: { path: "/examples/billing" },
     Invoice: { path: "/examples/invoice" },
-    Signin: { path: "/examples/sign-in" },
     Signup: { path: "/examples/sign-up" },
     ForgotPassword: { path: "/examples/forgot-password" },
     ResetPassword: { path: "/examples/reset-password" },

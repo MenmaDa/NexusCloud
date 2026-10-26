@@ -1,45 +1,118 @@
-
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
+import { Link } from "react-router-dom";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { faBell, faCog, faEnvelopeOpen, faSearch, faSignOutAlt, faUserShield } from "@fortawesome/free-solid-svg-icons";
+import {
+  faBell,
+  faCheckSquare,
+  faCog,
+  faEnvelopeOpen,
+  faSearch,
+  faSignOutAlt,
+  faUserShield
+} from "@fortawesome/free-solid-svg-icons";
 import { faUserCircle } from "@fortawesome/free-regular-svg-icons";
-import { Row, Col, Nav, Form, Image, Navbar, Dropdown, Container, ListGroup, InputGroup } from '@themesberg/react-bootstrap';
+import {
+  Row,
+  Col,
+  Nav,
+  Form,
+  Image,
+  Navbar,
+  Dropdown,
+  Container,
+  ListGroup,
+  InputGroup
+} from "@themesberg/react-bootstrap";
 
-import NOTIFICATIONS_DATA from "../data/notifications";
+import { Routes } from "../routes";
+import {
+  contarNoLeidas,
+  listarMisNotificaciones
+} from "../services/notificacionApi";
+import {
+  cerrarSesion,
+  obtenerFotoPerfil,
+  obtenerNombreUsuario
+} from "../services/authApi";
+
 import Profile3 from "../assets/img/team/profile-picture-3.jpg";
 
 
 export default (props) => {
-  const [notifications, setNotifications] = useState(NOTIFICATIONS_DATA);
-  const areNotificationsRead = notifications.reduce((acc, notif) => acc && notif.read, true);
+  const [notifications, setNotifications] = useState([]);
+  const [cantidadNoLeidas, setCantidadNoLeidas] = useState(0);
 
-  const markNotificationsAsRead = () => {
-    setTimeout(() => {
-      setNotifications(notifications.map(n => ({ ...n, read: true })));
-    }, 300);
+  const cargarNotificaciones = async () => {
+    try {
+      const [datosNotificaciones, resultadoCantidad] = await Promise.all([
+        listarMisNotificaciones(),
+        contarNoLeidas()
+      ]);
+
+      setNotifications(datosNotificaciones);
+      setCantidadNoLeidas(resultadoCantidad.cantidad || 0);
+    } catch {
+      setNotifications([]);
+      setCantidadNoLeidas(0);
+    }
+  };
+
+  useEffect(() => {
+    cargarNotificaciones();
+
+    const intervalo = setInterval(cargarNotificaciones, 30000);
+
+    return () => clearInterval(intervalo);
+  }, []);
+
+  const areNotificationsRead = cantidadNoLeidas === 0;
+
+  const nombreUsuario = obtenerNombreUsuario();
+  const fotoPerfil = obtenerFotoPerfil();
+
+  const inicial = nombreUsuario.charAt(0).toUpperCase();
+
+  const manejarCerrarSesion = () => {
+    cerrarSesion();
+    window.location.hash = "#/examples/sign-in";
   };
 
 
-  const Notification = (props) => {
-    const { link, sender, image, time, message, read = false } = props;
-    const readClassName = read ? "" : "text-danger";
+  const Notification = (notificacion) => {
+    const fecha = notificacion.fecha
+      ? notificacion.fecha.replace("T", " ")
+      : "";
 
     return (
-      <ListGroup.Item action href={link} className="border-bottom border-light">
+      <ListGroup.Item
+        as={Link}
+        to={Routes.Notificaciones.path}
+        action
+        className={`border-bottom border-light ${!notificacion.leida ? "bg-soft" : ""
+          }`}
+      >
         <Row className="align-items-center">
           <Col className="col-auto">
-            <Image src={image} className="user-avatar lg-avatar rounded-circle" />
+            <Image
+              src={fotoPerfil || Profile3}
+              className="user-avatar md-avatar rounded-circle"
+            />
           </Col>
+
           <Col className="ps-0 ms--2">
             <div className="d-flex justify-content-between align-items-center">
-              <div>
-                <h4 className="h6 mb-0 text-small">{sender}</h4>
-              </div>
-              <div className="text-end">
-                <small className={readClassName}>{time}</small>
-              </div>
+              <h4 className="h6 mb-0 text-small">
+                {notificacion.titulo}
+              </h4>
+
+              <small className={!notificacion.leida ? "text-danger" : ""}>
+                {fecha}
+              </small>
             </div>
-            <p className="font-small mt-1 mb-0">{message}</p>
+
+            <p className="font-small mt-1 mb-0">
+              {notificacion.mensaje}
+            </p>
           </Col>
         </Row>
       </ListGroup.Item>
@@ -61,23 +134,45 @@ export default (props) => {
             </Form>
           </div>
           <Nav className="align-items-center">
-            <Dropdown as={Nav.Item} onToggle={markNotificationsAsRead} >
+            <Dropdown
+              as={Nav.Item}
+              onToggle={(abierto) => {
+                if (abierto) {
+                  cargarNotificaciones();
+                }
+              }}
+            >
               <Dropdown.Toggle as={Nav.Link} className="text-dark icon-notifications me-lg-3">
                 <span className="icon icon-sm">
-                  <FontAwesomeIcon icon={faBell} className="bell-shake" />
+                  <div className="position-relative">
+                    <FontAwesomeIcon icon={faBell} />
+
+                    {cantidadNoLeidas > 0 && (
+                      <span
+                        className="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger"
+                        style={{ fontSize: "0.6rem" }}
+                      >
+                        {cantidadNoLeidas > 9 ? "9+" : cantidadNoLeidas}
+                      </span>
+                    )}
+                  </div>
                   {areNotificationsRead ? null : <span className="icon-badge rounded-circle unread-notifications" />}
                 </span>
               </Dropdown.Toggle>
               <Dropdown.Menu className="dashboard-dropdown notifications-dropdown dropdown-menu-lg dropdown-menu-center mt-2 py-0">
                 <ListGroup className="list-group-flush">
-                  <Nav.Link href="#" className="text-center text-primary fw-bold border-bottom border-light py-3">
+                  <div className="text-center text-primary fw-bold border-bottom border-light py-3">
                     Notifications
-                  </Nav.Link>
+                  </div>
 
                   {notifications.map(n => <Notification key={`notification-${n.id}`} {...n} />)}
 
-                  <Dropdown.Item className="text-center text-primary fw-bold py-3">
-                    View all
+                  <Dropdown.Item
+                    as={Link}
+                    to={Routes.Notificaciones.path}
+                    className="text-center fw-bold"
+                  >
+                    View all notifications
                   </Dropdown.Item>
                 </ListGroup>
               </Dropdown.Menu>
@@ -86,9 +181,23 @@ export default (props) => {
             <Dropdown as={Nav.Item}>
               <Dropdown.Toggle as={Nav.Link} className="pt-1 px-0">
                 <div className="media d-flex align-items-center">
-                  <Image src={Profile3} className="user-avatar md-avatar rounded-circle" />
+                  {fotoPerfil ? (
+                    <Image
+                      src={fotoPerfil}
+                      className="user-avatar md-avatar rounded-circle"
+                      alt={`Profile of ${nombreUsuario}`}
+                    />
+                  ) : (
+                    <div
+                      className="user-avatar md-avatar rounded-circle bg-primary text-white d-flex align-items-center justify-content-center fw-bold"
+                    >
+                      {inicial}
+                    </div>
+                  )}
                   <div className="media-body ms-2 text-dark align-items-center d-none d-lg-block">
-                    <span className="mb-0 font-small fw-bold">Bonnie Green</span>
+                    <span className="mb-0 font-small fw-bold">
+                      {nombreUsuario}
+                    </span>
                   </div>
                 </div>
               </Dropdown.Toggle>
@@ -108,8 +217,16 @@ export default (props) => {
 
                 <Dropdown.Divider />
 
-                <Dropdown.Item className="fw-bold">
-                  <FontAwesomeIcon icon={faSignOutAlt} className="text-danger me-2" /> Logout
+                <Dropdown.Item as={Link} to={Routes.MisTareas.path}>
+                  <FontAwesomeIcon icon={faCheckSquare} className="me-2" />
+                  My Tasks
+                </Dropdown.Item>
+
+                <Dropdown.Divider />
+
+                <Dropdown.Item onClick={manejarCerrarSesion}>
+                  <FontAwesomeIcon icon={faSignOutAlt} className="text-danger me-2" />
+                  Logout
                 </Dropdown.Item>
               </Dropdown.Menu>
             </Dropdown>
