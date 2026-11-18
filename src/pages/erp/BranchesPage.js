@@ -25,7 +25,7 @@ import {
   listarSedes,
 } from "../../services/sedeApi";
 
-import ImportarExcelModal from "../../components/ImportarExcelModal";
+import ImportarExcelModal from "../components/ImportarExcelModal";
 
 const formularioInicial = {
   nombre: "",
@@ -122,10 +122,7 @@ export default function BranchesPage() {
 
   // Excel import: map spreadsheet columns to backend fields
   const transformarSedeExcel = (fila) => {
-    const nombre = String(fila.Name ?? "").trim();
-    const ciudad = String(fila.City ?? "").trim();
-    const direccion = String(fila.Address ?? "").trim();
-    const telefono = String(fila.Phone ?? "").trim();
+    const nombre = String(fila.nombre || "").trim();
 
     if (!nombre) {
       throw new Error("Branch name is required.");
@@ -133,9 +130,9 @@ export default function BranchesPage() {
 
     return {
       nombre,
-      ciudad,
-      direccion,
-      telefono,
+      ciudad: String(fila.ciudad || "").trim(),
+      direccion: String(fila.direccion || "").trim(),
+      telefono: String(fila.telefono || "").trim()
     };
   };
 
@@ -330,8 +327,20 @@ export default function BranchesPage() {
         campos={["nombre", "ciudad", "direccion", "telefono"]}
         transformarFila={transformarSedeExcel}
         onSave={crearSede}
-        onSaved={async () => {
-          await cargarSedes();
+        onSaved={cargarSedes}
+        mapeoColumnas={{
+          nombre: [
+            "Name",
+            "Nombre",
+            "Branch",
+            "Branch name",
+            "Sede",
+            "Nombre sede",
+            "Nombre de sede"
+          ],
+          ciudad: ["City", "Ciudad"],
+          direccion: ["Address", "Direccion", "Dirección"],
+          telefono: ["Phone", "Telephone", "Telefono", "Teléfono"]
         }}
       />
     </>

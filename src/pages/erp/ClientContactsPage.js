@@ -27,7 +27,7 @@ import {
   listarContactosClientes,
 } from "../../services/contactoClienteApi";
 
-import ImportarExcelModal from "../../components/ImportarExcelModal";
+import ImportarExcelModal from "../components/ImportarExcelModal";
 
 const formularioInicial = {
   nombres: "",
@@ -142,12 +142,12 @@ export default function ClientContactsPage() {
 
   // Convert Excel rows to the contact API format
   const transformarContactoExcel = (fila) => {
-    const nombres = String(fila["First Name"] ?? "").trim();
-    const apellidos = String(fila["Last Name"] ?? "").trim();
-    const cargo = String(fila.Position ?? "").trim();
-    const email = String(fila.Email ?? "").trim();
-    const telefono = String(fila.Phone ?? "").trim();
-    const clienteNit = String(fila["Client NIT"] ?? "").trim();
+    const nombres = String(fila.nombres || "").trim();
+    const apellidos = String(fila.apellidos || "").trim();
+    const cargo = String(fila.cargo || "").trim();
+    const email = String(fila.email || "").trim();
+    const telefono = String(fila.telefono || "").trim();
+    const clienteNit = String(fila.clienteNit || "").trim();
 
     if (!nombres) {
       throw new Error("First name is required.");
@@ -434,6 +434,19 @@ export default function ClientContactsPage() {
         onSave={crearContactoCliente}
         onSaved={async () => {
           await cargarDatos();
+        }}
+        mapeoColumnas={{
+          nombres: ["First Name", "Nombre", "Nombres", "Names"],
+          apellidos: ["Last Name", "Apellido", "Apellidos", "Surnames"],
+          cargo: ["Position", "Cargo", "Job title"],
+          email: ["Email", "Correo", "Correo electrónico"],
+          telefono: ["Phone", "Teléfono", "Telefono", "Mobile"],
+          clienteNit: [
+            "Client NIT",
+            "NIT cliente",
+            "NIT del cliente",
+            "Client tax ID"
+          ]
         }}
       />
     </>

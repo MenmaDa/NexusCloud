@@ -28,7 +28,7 @@ import {
 } from "../../services/contratoApi";
 
 import { listarClientes } from "../../services/clienteApi";
-import ImportarExcelModal from "../../components/ImportarExcelModal";
+import ImportarExcelModal from "../components/ImportarExcelModal";
 
 const formularioInicial = {
   numero: "",
@@ -169,17 +169,13 @@ export default function ContractsPage() {
 
   // Transform an Excel row into the existing contract API format
   const transformarContratoExcel = (fila) => {
-    const numero = String(fila["Contract Number"] ?? "").trim();
-    const clienteNit = String(fila["Client NIT"] ?? "").trim();
-    const fechaInicio = String(fila["Start Date"] ?? "").trim();
-    const fechaFin = String(fila["End Date"] ?? "").trim();
-    const valorTexto = String(
-      fila.Value ?? fila["Contract Value"] ?? "",
-    ).trim();
+    const numero = String(fila.numero || "").trim();
+    const clienteNit = String(fila.clienteNit || "").trim();
+    const fechaInicio = String(fila.fechaInicio || "").trim();
+    const fechaFin = String(fila.fechaFin || "").trim();
+    const valorTexto = String(fila.valor || "").trim();
 
-    const estadoTexto = String(fila.Status ?? "DRAFT")
-      .trim()
-      .toUpperCase();
+    const estadoTexto = String(fila.estado || "DRAFT")
 
     if (!numero) {
       throw new Error("Contract number is required.");
@@ -542,6 +538,14 @@ export default function ContractsPage() {
         onSave={crearContrato}
         onSaved={async () => {
           await cargarDatos();
+        }}
+        mapeoColumnas={{
+          numero: ["Contract Number", "Número de contrato", "Numero de contrato"],
+          clienteNit: ["Client NIT", "NIT cliente", "NIT del cliente"],
+          fechaInicio: ["Start Date", "Fecha inicio", "Fecha de inicio"],
+          fechaFin: ["End Date", "Fecha fin", "Fecha de finalización"],
+          valor: ["Value", "Contract Value", "Valor", "Valor contrato"],
+          estado: ["Status", "Estado"]
         }}
       />
     </>

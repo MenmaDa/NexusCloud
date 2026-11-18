@@ -25,7 +25,7 @@ import {
   listarClientes,
 } from "../../services/clienteApi";
 
-import ImportarExcelModal from "../../components/ImportarExcelModal";
+import ImportarExcelModal from "../components/ImportarExcelModal";
 
 const clienteInicial = {
   razonSocial: "",
@@ -133,17 +133,12 @@ export default function ClientsPage() {
 
   // Transform Excel rows into the client API format
   function transformarClienteExcel(fila) {
-    const razonSocial = String(fila["Company Name"] ?? "").trim();
-
-    const nit = String(fila.NIT ?? "").trim();
-    const email = String(fila.Email ?? "").trim();
-    const telefono = String(fila.Phone ?? "").trim();
-    const direccion = String(fila.Address ?? "").trim();
-
-    const activoTexto = String(fila.Active ?? "true")
-      .trim()
-      .toLowerCase();
-
+    const razonSocial = String(fila.razonSocial || "").trim();
+    const nit = String(fila.nit || "").trim();
+    const email = String(fila.email || "").trim();
+    const telefono = String(fila.telefono || "").trim();
+    const direccion = String(fila.direccion || "").trim();
+    const activoTexto = String(fila.activo || "true").trim().toLowerCase();
     if (!razonSocial) {
       throw new Error("Company name is required.");
     }
@@ -430,6 +425,20 @@ export default function ClientsPage() {
         onSave={crearCliente}
         onSaved={async () => {
           await cargarClientes();
+        }}
+        mapeoColumnas={{
+          razonSocial: [
+            "Company Name",
+            "Razón Social",
+            "Razon Social",
+            "Cliente",
+            "Client"
+          ],
+          nit: ["NIT", "Tax ID", "TaxId", "Identification"],
+          email: ["Email", "Correo", "Correo electrónico"],
+          telefono: ["Phone", "Telephone", "Teléfono", "Telefono"],
+          direccion: ["Address", "Dirección", "Direccion"],
+          activo: ["Active", "Activo", "Enabled"]
         }}
       />
     </>

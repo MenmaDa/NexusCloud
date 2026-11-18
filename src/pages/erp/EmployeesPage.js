@@ -28,7 +28,7 @@ import {
   listarEmpleados,
 } from "../../services/empleadoApi";
 
-import ImportarExcelModal from "../../components/ImportarExcelModal";
+import ImportarExcelModal from "../components/ImportarExcelModal";
 
 const formularioInicial = {
   nombres: "",
@@ -196,17 +196,13 @@ export default function EmployeesPage() {
 
   // Transform Excel columns into the existing employee API format.
   const transformarEmpleadoExcel = (fila) => {
-    const nombres = String(fila["First Name"] ?? "").trim();
+    const nombres = String(fila.nombres || "").trim();
+    const apellidos = String(fila.apellidos || "").trim();
+    const email = String(fila.email || "").trim().toLowerCase();
+    const cargo = String(fila.cargo || "").trim();
+    const nombreSede = String(fila.nombreSede || "").trim();
 
-    const apellidos = String(fila["Last Name"] ?? "").trim();
 
-    const email = String(fila.Email ?? "")
-      .trim()
-      .toLowerCase();
-
-    const cargo = String(fila.Position ?? "").trim();
-
-    const nombreSede = String(fila["Branch Name"] ?? "").trim();
 
     if (!nombres) {
       throw new Error("First Name is required.");
@@ -236,7 +232,7 @@ export default function EmployeesPage() {
       throw new Error(`An employee with email "${email}" already exists.`);
     }
 
-    const costoHora = convertirCostoHora(fila["Hourly Cost"]);
+    const costoHora = convertirCostoHora(fila.costoHora);
 
     let sedeId = null;
 
@@ -527,6 +523,14 @@ export default function EmployeesPage() {
         onSave={crearEmpleado}
         onSaved={async () => {
           await cargarDatos();
+        }}
+        mapeoColumnas={{
+          nombres: ["First Name", "Nombre", "Nombres", "Names"],
+          apellidos: ["Last Name", "Apellido", "Apellidos", "Surnames"],
+          email: ["Email", "Correo", "Correo electrónico"],
+          cargo: ["Position", "Cargo", "Job title"],
+          nombreSede: ["Branch Name", "Sede", "Nombre sede", "Branch"],
+          costoHora: ["Hourly Cost", "Costo hora", "Costo por hora"]
         }}
       />
     </>

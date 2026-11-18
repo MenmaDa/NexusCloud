@@ -44,3 +44,31 @@ export const eliminarInfraestructura = (id) =>
     apiFetch(`${API_URL}/${id}`, {
         method: "DELETE"
     }).then(manejarRespuesta);
+
+export const importarInfraestructura = async (archivo) => {
+  const formData = new FormData();
+  formData.append("archivo", archivo);
+
+  const response = await apiFetch(
+    "http://localhost:8080/api/infraestructura/importacion",
+    {
+      method: "POST",
+      body: formData
+    }
+  );
+
+  if (!response.ok) {
+    let mensaje = "Could not import the infrastructure file.";
+
+    try {
+      const error = await response.json();
+      mensaje = error.detail || error.message || mensaje;
+    } catch {
+      // Sin detalle adicional.
+    }
+
+    throw new Error(mensaje);
+  }
+
+  return response.json();
+};

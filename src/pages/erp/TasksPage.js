@@ -29,7 +29,7 @@ import {
   listarTareas,
 } from "../../services/tareaApi";
 
-import ImportarExcelModal from "../../components/ImportarExcelModal";
+import ImportarExcelModal from "../components/ImportarExcelModal";
 
 const formularioInicial = {
   titulo: "",
@@ -210,29 +210,27 @@ export default function TasksPage() {
 
   // Transform Excel rows into the existing task API format.
   const transformarTareaExcel = (fila) => {
-    const titulo = String(fila["Task Title"] ?? "").trim();
+    const titulo = String(fila.titulo || "").trim();
+    const descripcion = String(fila.descripcion || "").trim();
+    const nombreProyecto = String(fila.nombreProyecto || "").trim();
 
-    const descripcion = String(fila.Description ?? "").trim();
-
-    const nombreProyecto = String(fila["Project Name"] ?? "").trim();
-
-    const correoResponsable = String(fila["Responsible Email"] ?? "")
+    const correoResponsable = String(fila.correoResponsable || "")
       .trim()
       .toLowerCase();
 
-    const fechaLimite = String(fila["Due Date"] ?? "").trim();
+    const fechaLimite = String(fila.fechaLimite || "").trim();
 
     const horasEstimadas = validarHoras(
-      fila["Estimated Hours"],
-      "Estimated Hours",
+      fila.horasEstimadas,
+      "Estimated Hours"
     );
 
-    const horasReales = validarHoras(fila["Actual Hours"], "Actual Hours");
+    const horasReales = validarHoras(
+      fila.horasReales,
+      "Actual Hours"
+    );
 
-    const estadoTexto = String(fila.Status ?? "Pending")
-      .trim()
-      .toUpperCase()
-      .replace(/\s+/g, "_");
+    const estadoTexto = String(fila.estado || "Pending")
 
     if (!titulo) {
       throw new Error("Task title is required.");
@@ -628,6 +626,27 @@ export default function TasksPage() {
         onSave={crearTarea}
         onSaved={async () => {
           await cargarDatos();
+        }}
+        mapeoColumnas={{
+          titulo: ["Task Title", "Título", "Titulo", "Nombre tarea"],
+          descripcion: ["Description", "Descripción", "Descripcion"],
+          nombreProyecto: [
+            "Project Name",
+            "Proyecto",
+            "Nombre proyecto"
+          ],
+          correoResponsable: [
+            "Responsible Email",
+            "Correo responsable",
+            "Email responsable"
+          ],
+          fechaLimite: ["Due Date", "Fecha límite", "Fecha limite"],
+          horasEstimadas: [
+            "Estimated Hours",
+            "Horas estimadas"
+          ],
+          horasReales: ["Actual Hours", "Horas reales"],
+          estado: ["Status", "Estado"]
         }}
       />
     </>

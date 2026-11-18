@@ -18,7 +18,7 @@ import {
   Table,
 } from "@themesberg/react-bootstrap";
 
-import ImportarExcelModal from "../../components/ImportarExcelModal";
+import ImportarExcelModal from "../components/ImportarExcelModal";
 
 import {
   actualizarProductoServicio,
@@ -155,12 +155,9 @@ export default function ProductsServicesPage() {
   // =========================================
 
   function transformarProductoExcel(fila) {
-    const nombre = String(fila.Nombre ?? "").trim();
-    const categoria = String(fila.Categoria ?? "").trim();
-
-    const tipo = String(fila.Tipo ?? "PRODUCTO")
-      .trim()
-      .toUpperCase();
+    const nombre = String(fila.nombre || "").trim();
+    const categoria = String(fila.categoria || "").trim();
+    const tipo = String(fila.tipo || "PRODUCTO").trim().toUpperCase();
 
     if (!nombre) {
       throw new Error("El nombre es obligatorio.");
@@ -190,9 +187,13 @@ export default function ProductsServicesPage() {
       return numero;
     }
 
-    const precio = numeroObligatorio(fila.Precio, "Precio", 0);
-
-    const puntuacionCalidad = numeroObligatorio(fila.Calidad, "Calidad", 1, 5);
+    const precio = numeroObligatorio(fila.precio, "Precio", 0);
+    const puntuacionCalidad = numeroObligatorio(
+      fila.puntuacionCalidad,
+      "Calidad",
+      1,
+      5
+    );
 
     if (!Number.isInteger(puntuacionCalidad)) {
       throw new Error("La calidad debe ser un número entero entre 1 y 5.");
@@ -201,18 +202,16 @@ export default function ProductsServicesPage() {
     let stock = null;
 
     if (tipo === "PRODUCTO") {
-      stock = numeroObligatorio(fila.Stock, "Stock", 0);
+      stock = numeroObligatorio(fila.stock, "Stock", 0);
+
 
       if (!Number.isInteger(stock)) {
         throw new Error("El stock debe ser un número entero.");
       }
     }
 
-    const descripcion = String(fila.Descripcion ?? "").trim();
-
-    const activoTexto = String(fila.Activo ?? "true")
-      .trim()
-      .toLowerCase();
+    const descripcion = String(fila.descripcion || "").trim();
+    const activoTexto = String(fila.activo || "true").trim().toLowerCase();
 
     const valoresValidos = ["true", "false", "1", "0", "si", "sí", "no"];
 
@@ -541,6 +540,16 @@ export default function ProductsServicesPage() {
         onSave={crearProductoServicio}
         onSaved={async () => {
           await cargarProductos();
+        }}
+        mapeoColumnas={{
+          nombre: ["Nombre", "Name", "Product name", "Service name"],
+          categoria: ["Categoría", "Categoria", "Category"],
+          tipo: ["Tipo", "Type"],
+          precio: ["Precio", "Price", "Unit price"],
+          puntuacionCalidad: ["Calidad", "Quality", "Quality score"],
+          stock: ["Stock", "Inventory", "Quantity"],
+          descripcion: ["Descripción", "Descripcion", "Description"],
+          activo: ["Activo", "Active", "Enabled"]
         }}
       />
     </>

@@ -30,7 +30,7 @@ import {
   listarProyectos,
 } from "../../services/proyectoApi";
 
-import ImportarExcelModal from "../../components/ImportarExcelModal";
+import ImportarExcelModal from "../components/ImportarExcelModal";
 
 const formularioInicial = {
   nombre: "",
@@ -243,24 +243,15 @@ export default function ProjectsPage() {
 
   // Transform Excel rows into the project API format.
   const transformarProyectoExcel = (fila) => {
-    const nombre = String(fila["Project Name"] ?? "").trim();
+    const nombre = String(fila.nombre || "").trim();
+    const descripcion = String(fila.descripcion || "").trim();
+    const clienteNit = String(fila.clienteNit || "").trim();
+    const contratoNumero = String(fila.contratoNumero || "").trim();
+    const fechaInicio = String(fila.fechaInicio || "").trim();
+    const fechaFinEstimada = String(fila.fechaFinEstimada || "").trim();
+    const presupuesto = convertirPresupuesto(fila.presupuesto);
 
-    const descripcion = String(fila.Description ?? "").trim();
-
-    const clienteNit = String(fila["Client NIT"] ?? "").trim();
-
-    const contratoNumero = String(fila["Contract Number"] ?? "").trim();
-
-    const fechaInicio = String(fila["Start Date"] ?? "").trim();
-
-    const fechaFinEstimada = String(fila["Estimated End Date"] ?? "").trim();
-
-    const presupuesto = convertirPresupuesto(fila.Budget);
-
-    const estadoTexto = String(fila.Status ?? "Planned")
-      .trim()
-      .toUpperCase()
-      .replace(/\s+/g, "_");
+    const estadoTexto = String(fila.estado || "Planned")
 
     if (!nombre) {
       throw new Error("Project name is required.");
@@ -675,6 +666,24 @@ export default function ProjectsPage() {
         onSave={crearProyecto}
         onSaved={async () => {
           await cargarDatos();
+        }}
+        mapeoColumnas={{
+          nombre: ["Project Name", "Nombre proyecto", "Nombre del proyecto"],
+          descripcion: ["Description", "Descripción", "Descripcion"],
+          clienteNit: ["Client NIT", "NIT cliente", "NIT del cliente"],
+          contratoNumero: [
+            "Contract Number",
+            "Número de contrato",
+            "Numero de contrato"
+          ],
+          fechaInicio: ["Start Date", "Fecha inicio", "Fecha de inicio"],
+          fechaFinEstimada: [
+            "Estimated End Date",
+            "Fecha fin estimada",
+            "Fecha estimada de finalización"
+          ],
+          presupuesto: ["Budget", "Presupuesto"],
+          estado: ["Status", "Estado"]
         }}
       />
     </>
