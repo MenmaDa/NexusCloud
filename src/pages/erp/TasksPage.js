@@ -3,10 +3,12 @@ import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import {
   faCheckSquare,
   faEdit,
+  faFileExcel,
   faHome,
   faPlus,
-  faTrash
+  faTrash,
 } from "@fortawesome/free-solid-svg-icons";
+
 import {
   Badge,
   Breadcrumb,
@@ -14,17 +16,20 @@ import {
   Card,
   Form,
   Modal,
-  Table
+  Table,
 } from "@themesberg/react-bootstrap";
 
 import { listarProyectos } from "../../services/proyectoApi";
 import { listarEmpleados } from "../../services/empleadoApi";
+
 import {
   actualizarTarea,
   crearTarea,
   eliminarTarea,
-  listarTareas
+  listarTareas,
 } from "../../services/tareaApi";
+
+import ImportarExcelModal from "../../components/ImportarExcelModal";
 
 const formularioInicial = {
   titulo: "",
@@ -34,14 +39,21 @@ const formularioInicial = {
   fechaLimite: "",
   horasEstimadas: "",
   horasReales: "",
-  estado: "PENDIENTE"
+  estado: "PENDIENTE",
 };
 
 const colorEstado = {
   PENDIENTE: "secondary",
   EN_PROGRESO: "warning",
   BLOQUEADA: "danger",
-  TERMINADA: "success"
+  TERMINADA: "success",
+};
+
+const etiquetasEstado = {
+  PENDIENTE: "Pending",
+  EN_PROGRESO: "In progress",
+  BLOQUEADA: "Blocked",
+  TERMINADA: "Completed",
 };
 
 export default function TasksPage() {
@@ -51,6 +63,7 @@ export default function TasksPage() {
   const [formulario, setFormulario] = useState(formularioInicial);
   const [tareaEditando, setTareaEditando] = useState(null);
   const [mostrarModal, setMostrarModal] = useState(false);
+  const [mostrarImportacion, setMostrarImportacion] = useState(false);
   const [cargando, setCargando] = useState(true);
   const [error, setError] = useState("");
 
@@ -59,16 +72,18 @@ export default function TasksPage() {
       setCargando(true);
       setError("");
 
-      const [datosTareas, datosProyectos, datosEmpleados] =
-        await Promise.all([
-          listarTareas(),
-          listarProyectos(),
-          listarEmpleados()
-        ]);
+      const [datosTareas, datosProyectos, datosEmpleados] = await Promise.all([
+        listarTareas(),
+        listarProyectos(),
+        listarEmpleados(),
+      ]);
 
       setTareas(datosTareas);
       setProyectos(datosProyectos);
-      setEmpleados(datosEmpleados.filter((empleado) => empleado.activo !== false));
+
+      setEmpleados(
+        datosEmpleados.filter((empleado) => empleado.activo !== false),
+      );
     } catch (err) {
       setError(err.message);
     } finally {
@@ -98,7 +113,7 @@ export default function TasksPage() {
       fechaLimite: tarea.fechaLimite || "",
       horasEstimadas: tarea.horasEstimadas ?? "",
       horasReales: tarea.horasReales ?? "",
-      estado: tarea.estado || "PENDIENTE"
+      estado: tarea.estado || "PENDIENTE",
     });
 
     setError("");
@@ -110,7 +125,7 @@ export default function TasksPage() {
 
     setFormulario((anterior) => ({
       ...anterior,
-      [name]: value
+      [name]: value,
     }));
   };
 
@@ -123,12 +138,12 @@ export default function TasksPage() {
       const datos = {
         ...formulario,
         responsableId: formulario.responsableId || null,
-        horasEstimadas: formulario.horasEstimadas === ""
-          ? null
-          : Number(formulario.horasEstimadas),
-        horasReales: formulario.horasReales === ""
-          ? null
-          : Number(formulario.horasReales)
+        horasEstimadas:
+          formulario.horasEstimadas === ""
+            ? null
+            : Number(formulario.horasEstimadas),
+        horasReales:
+          formulario.horasReales === "" ? null : Number(formulario.horasReales),
       };
 
       if (tareaEditando) {
@@ -145,7 +160,7 @@ export default function TasksPage() {
   };
 
   const borrarTarea = async (tarea) => {
-    if (!window.confirm(`¿Deseas eliminar la tarea "${tarea.titulo}"?`)) {
+    if (!window.confirm(`Do you want to delete the task "${tarea.titulo}"?`)) {
       return;
     }
 
@@ -158,35 +173,197 @@ export default function TasksPage() {
     }
   };
 
+  // Validate dates in YYYY-MM-DD format.
+  const fechaValida = (fecha) => {
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(fecha)) {
+      return false;
+    }
+
+    const fechaObjeto = new Date(`${fecha}T00:00:00Z`);
+
+    return (
+      !Number.isNaN(fechaObjeto.getTime()) &&
+      fechaObjeto.toISOString().slice(0, 10) === fecha
+    );
+  };
+
+  // Validate optional non-negative integer values.
+  const validarHoras = (valorOriginal, campo) => {
+    const texto = String(valorOriginal ?? "").trim();
+
+    if (texto === "") {
+      return null;
+    }
+
+    if (!/^\d+$/.test(texto)) {
+      throw new Error(`${campo} must be a non-negative whole number.`);
+    }
+
+    const numero = Number(texto);
+
+    if (!Number.isSafeInteger(numero)) {
+      throw new Error(`${campo} contains an invalid number.`);
+    }
+
+    return numero;
+  };
+
+  // Transform Excel rows into the existing task API format.
+  const transformarTareaExcel = (fila) => {
+    const titulo = String(fila["Task Title"] ?? "").trim();
+
+    const descripcion = String(fila.Description ?? "").trim();
+
+    const nombreProyecto = String(fila["Project Name"] ?? "").trim();
+
+    const correoResponsable = String(fila["Responsible Email"] ?? "")
+      .trim()
+      .toLowerCase();
+
+    const fechaLimite = String(fila["Due Date"] ?? "").trim();
+
+    const horasEstimadas = validarHoras(
+      fila["Estimated Hours"],
+      "Estimated Hours",
+    );
+
+    const horasReales = validarHoras(fila["Actual Hours"], "Actual Hours");
+
+    const estadoTexto = String(fila.Status ?? "Pending")
+      .trim()
+      .toUpperCase()
+      .replace(/\s+/g, "_");
+
+    if (!titulo) {
+      throw new Error("Task title is required.");
+    }
+
+    if (!nombreProyecto) {
+      throw new Error("Project Name is required.");
+    }
+
+    const proyectosEncontrados = proyectos.filter(
+      (proyecto) =>
+        String(proyecto.nombre ?? "")
+          .trim()
+          .toLowerCase() === nombreProyecto.toLowerCase(),
+    );
+
+    if (proyectosEncontrados.length === 0) {
+      throw new Error(`Project "${nombreProyecto}" was not found.`);
+    }
+
+    if (proyectosEncontrados.length > 1) {
+      throw new Error(`Multiple projects found with name "${nombreProyecto}".`);
+    }
+
+    const proyectoId = proyectosEncontrados[0].id;
+
+    let responsableId = null;
+
+    if (correoResponsable) {
+      const empleadosEncontrados = empleados.filter(
+        (empleado) =>
+          String(empleado.email ?? "")
+            .trim()
+            .toLowerCase() === correoResponsable,
+      );
+
+      if (empleadosEncontrados.length === 0) {
+        throw new Error(
+          `No active employee found with email "${correoResponsable}".`,
+        );
+      }
+
+      if (empleadosEncontrados.length > 1) {
+        throw new Error(
+          `Multiple employees found with email "${correoResponsable}".`,
+        );
+      }
+
+      responsableId = empleadosEncontrados[0].id;
+    }
+
+    if (fechaLimite && !fechaValida(fechaLimite)) {
+      throw new Error("Due Date must use the YYYY-MM-DD format.");
+    }
+
+    const estadosValidos = {
+      PENDING: "PENDIENTE",
+      PENDIENTE: "PENDIENTE",
+      IN_PROGRESS: "EN_PROGRESO",
+      EN_PROGRESO: "EN_PROGRESO",
+      BLOCKED: "BLOQUEADA",
+      BLOQUEADA: "BLOQUEADA",
+      COMPLETED: "TERMINADA",
+      TERMINADA: "TERMINADA",
+    };
+
+    const estado = estadosValidos[estadoTexto];
+
+    if (!estado) {
+      throw new Error(
+        "Status must be Pending, In Progress, Blocked, or Completed.",
+      );
+    }
+
+    return {
+      titulo,
+      descripcion,
+      proyectoId,
+      responsableId,
+      fechaLimite: fechaLimite || null,
+      horasEstimadas,
+      horasReales,
+      estado,
+    };
+  };
+
   return (
     <>
+      {/* Page header */}
       <div className="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center py-4">
         <div>
           <Breadcrumb className="d-none d-md-inline-block">
             <Breadcrumb.Item href="#/dashboard/overview">
               <FontAwesomeIcon icon={faHome} />
             </Breadcrumb.Item>
+
             <Breadcrumb.Item active>Tasks</Breadcrumb.Item>
           </Breadcrumb>
 
           <h2 className="h4">Tasks</h2>
+
           <p className="mb-0">
             Organize project activities and assign responsible employees.
           </p>
         </div>
 
-        <Button variant="primary" onClick={abrirCrear}>
-          <FontAwesomeIcon icon={faPlus} className="me-2" />
-          New task
-        </Button>
+        <div className="d-flex flex-wrap" style={{ gap: "10px" }}>
+          <Button variant="primary" onClick={abrirCrear}>
+            <FontAwesomeIcon icon={faPlus} className="me-2" />
+            New task
+          </Button>
+
+          <Button
+            variant="outline-primary"
+            onClick={() => setMostrarImportacion(true)}
+            disabled={cargando}
+          >
+            <FontAwesomeIcon icon={faFileExcel} className="me-2" />
+            Import Excel
+          </Button>
+        </div>
       </div>
 
+      {/* Error messages */}
       {error && (
         <div className="alert alert-danger" role="alert">
           {error}
         </div>
       )}
 
+      {/* Tasks table */}
       <Card border="light" className="shadow-sm mb-4">
         <Card.Header>
           <div className="d-flex align-items-center">
@@ -196,7 +373,11 @@ export default function TasksPage() {
         </Card.Header>
 
         <Card.Body className="p-0">
-          <Table responsive hover className="user-table align-items-center mb-0">
+          <Table
+            responsive
+            hover
+            className="user-table align-items-center mb-0"
+          >
             <thead>
               <tr>
                 <th>Task</th>
@@ -227,25 +408,32 @@ export default function TasksPage() {
                   <tr key={tarea.id}>
                     <td>
                       <span className="fw-bold d-block">{tarea.titulo}</span>
+
                       <small className="text-gray">
                         {tarea.descripcion || "No description"}
                       </small>
                     </td>
+
                     <td>{tarea.proyecto?.nombre || "Not available"}</td>
+
                     <td>
                       {tarea.responsable
                         ? `${tarea.responsable.nombres} ${tarea.responsable.apellidos}`
                         : "Unassigned"}
                     </td>
+
                     <td>{tarea.fechaLimite || "-"}</td>
+
                     <td>
                       {tarea.horasEstimadas ?? 0} h / {tarea.horasReales ?? 0} h
                     </td>
+
                     <td>
                       <Badge bg={colorEstado[tarea.estado] || "secondary"}>
-                        {tarea.estado}
+                        {etiquetasEstado[tarea.estado] || tarea.estado}
                       </Badge>
                     </td>
+
                     <td className="text-end">
                       <Button
                         variant="outline-primary"
@@ -272,6 +460,7 @@ export default function TasksPage() {
         </Card.Body>
       </Card>
 
+      {/* Manual registration modal */}
       <Modal
         as={Modal.Dialog}
         centered
@@ -295,6 +484,7 @@ export default function TasksPage() {
           <Modal.Body>
             <Form.Group className="mb-3">
               <Form.Label>Task title</Form.Label>
+
               <Form.Control
                 required
                 name="titulo"
@@ -305,6 +495,7 @@ export default function TasksPage() {
 
             <Form.Group className="mb-3">
               <Form.Label>Description</Form.Label>
+
               <Form.Control
                 as="textarea"
                 rows="3"
@@ -317,6 +508,7 @@ export default function TasksPage() {
             <div className="row">
               <Form.Group className="col-md-6 mb-3">
                 <Form.Label>Project</Form.Label>
+
                 <Form.Select
                   required
                   name="proyectoId"
@@ -335,6 +527,7 @@ export default function TasksPage() {
 
               <Form.Group className="col-md-6 mb-3">
                 <Form.Label>Responsible employee (optional)</Form.Label>
+
                 <Form.Select
                   name="responsableId"
                   value={formulario.responsableId}
@@ -354,6 +547,7 @@ export default function TasksPage() {
             <div className="row">
               <Form.Group className="col-md-4 mb-3">
                 <Form.Label>Due date</Form.Label>
+
                 <Form.Control
                   type="date"
                   name="fechaLimite"
@@ -364,6 +558,7 @@ export default function TasksPage() {
 
               <Form.Group className="col-md-4 mb-3">
                 <Form.Label>Estimated hours</Form.Label>
+
                 <Form.Control
                   min="0"
                   type="number"
@@ -375,6 +570,7 @@ export default function TasksPage() {
 
               <Form.Group className="col-md-4 mb-3">
                 <Form.Label>Actual hours</Form.Label>
+
                 <Form.Control
                   min="0"
                   type="number"
@@ -387,6 +583,7 @@ export default function TasksPage() {
 
             <Form.Group>
               <Form.Label>Status</Form.Label>
+
               <Form.Select
                 required
                 name="estado"
@@ -402,10 +599,7 @@ export default function TasksPage() {
           </Modal.Body>
 
           <Modal.Footer>
-            <Button
-              variant="secondary"
-              onClick={() => setMostrarModal(false)}
-            >
+            <Button variant="secondary" onClick={() => setMostrarModal(false)}>
               Cancel
             </Button>
 
@@ -415,6 +609,27 @@ export default function TasksPage() {
           </Modal.Footer>
         </Form>
       </Modal>
+
+      {/* Excel import modal */}
+      <ImportarExcelModal
+        show={mostrarImportacion}
+        onHide={() => setMostrarImportacion(false)}
+        campos={[
+          "titulo",
+          "descripcion",
+          "proyectoId",
+          "responsableId",
+          "fechaLimite",
+          "horasEstimadas",
+          "horasReales",
+          "estado",
+        ]}
+        transformarFila={transformarTareaExcel}
+        onSave={crearTarea}
+        onSaved={async () => {
+          await cargarDatos();
+        }}
+      />
     </>
   );
 }

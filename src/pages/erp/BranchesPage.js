@@ -5,29 +5,33 @@ import {
   faEdit,
   faHome,
   faPlus,
-  faTrash
+  faTrash,
+  faFileExcel,
 } from "@fortawesome/free-solid-svg-icons";
+
 import {
   Breadcrumb,
   Button,
   Card,
   Form,
   Modal,
-  Table
+  Table,
 } from "@themesberg/react-bootstrap";
 
 import {
   actualizarSede,
   crearSede,
   eliminarSede,
-  listarSedes
+  listarSedes,
 } from "../../services/sedeApi";
+
+import ImportarExcelModal from "../../components/ImportarExcelModal";
 
 const formularioInicial = {
   nombre: "",
   ciudad: "",
   direccion: "",
-  telefono: ""
+  telefono: "",
 };
 
 export default function BranchesPage() {
@@ -35,6 +39,7 @@ export default function BranchesPage() {
   const [formulario, setFormulario] = useState(formularioInicial);
   const [sedeEditando, setSedeEditando] = useState(null);
   const [mostrarModal, setMostrarModal] = useState(false);
+  const [mostrarImportacion, setMostrarImportacion] = useState(false);
   const [cargando, setCargando] = useState(true);
   const [error, setError] = useState("");
 
@@ -67,7 +72,7 @@ export default function BranchesPage() {
       nombre: sede.nombre || "",
       ciudad: sede.ciudad || "",
       direccion: sede.direccion || "",
-      telefono: sede.telefono || ""
+      telefono: sede.telefono || "",
     });
     setError("");
     setMostrarModal(true);
@@ -78,7 +83,7 @@ export default function BranchesPage() {
 
     setFormulario((anterior) => ({
       ...anterior,
-      [name]: value
+      [name]: value,
     }));
   };
 
@@ -102,7 +107,7 @@ export default function BranchesPage() {
   };
 
   const borrarSede = async (sede) => {
-    if (!window.confirm(`¿Deseas eliminar la sede "${sede.nombre}"?`)) {
+    if (!window.confirm(`Do you want to delete the branch "${sede.nombre}"?`)) {
       return;
     }
 
@@ -113,6 +118,25 @@ export default function BranchesPage() {
     } catch (err) {
       setError(err.message);
     }
+  };
+
+  // Excel import: map spreadsheet columns to backend fields
+  const transformarSedeExcel = (fila) => {
+    const nombre = String(fila.Name ?? "").trim();
+    const ciudad = String(fila.City ?? "").trim();
+    const direccion = String(fila.Address ?? "").trim();
+    const telefono = String(fila.Phone ?? "").trim();
+
+    if (!nombre) {
+      throw new Error("Branch name is required.");
+    }
+
+    return {
+      nombre,
+      ciudad,
+      direccion,
+      telefono,
+    };
   };
 
   return (
@@ -127,15 +151,26 @@ export default function BranchesPage() {
           </Breadcrumb>
 
           <h2 className="h4">Branches</h2>
+
           <p className="mb-0">
             Manage company offices and operational locations.
           </p>
         </div>
 
-        <Button variant="primary" onClick={abrirCrear}>
-          <FontAwesomeIcon icon={faPlus} className="me-2" />
-          New branch
-        </Button>
+        <div className="d-flex flex-wrap" style={{ gap: "10px" }}>
+          <Button variant="primary" onClick={abrirCrear}>
+            <FontAwesomeIcon icon={faPlus} className="me-2" />
+            New branch
+          </Button>
+
+          <Button
+            variant="outline-primary"
+            onClick={() => setMostrarImportacion(true)}
+          >
+            <FontAwesomeIcon icon={faFileExcel} className="me-2" />
+            Import Excel
+          </Button>
+        </div>
       </div>
 
       {error && (
@@ -153,7 +188,11 @@ export default function BranchesPage() {
         </Card.Header>
 
         <Card.Body className="p-0">
-          <Table responsive hover className="user-table align-items-center mb-0">
+          <Table
+            responsive
+            hover
+            className="user-table align-items-center mb-0"
+          >
             <thead>
               <tr>
                 <th>Branch</th>
@@ -184,6 +223,7 @@ export default function BranchesPage() {
                     <td>{sede.ciudad || "-"}</td>
                     <td>{sede.direccion || "-"}</td>
                     <td>{sede.telefono || "-"}</td>
+
                     <td className="text-end">
                       <Button
                         variant="outline-primary"
@@ -210,6 +250,7 @@ export default function BranchesPage() {
         </Card.Body>
       </Card>
 
+      {/* Manual registration modal */}
       <Modal
         as={Modal.Dialog}
         centered
@@ -237,7 +278,7 @@ export default function BranchesPage() {
                 name="nombre"
                 value={formulario.nombre}
                 onChange={cambiarCampo}
-                placeholder="Example: Bogotá Headquarters"
+                placeholder="Example: Bogota Headquarters"
               />
             </Form.Group>
 
@@ -247,7 +288,7 @@ export default function BranchesPage() {
                 name="ciudad"
                 value={formulario.ciudad}
                 onChange={cambiarCampo}
-                placeholder="Example: Bogotá"
+                placeholder="Example: Bogota"
               />
             </Form.Group>
 
@@ -271,18 +312,28 @@ export default function BranchesPage() {
           </Modal.Body>
 
           <Modal.Footer>
-            <Button
-              variant="secondary"
-              onClick={() => setMostrarModal(false)}
-            >
+            <Button variant="secondary" onClick={() => setMostrarModal(false)}>
               Cancel
             </Button>
+
             <Button variant="primary" type="submit">
               {sedeEditando ? "Save changes" : "Create branch"}
             </Button>
           </Modal.Footer>
         </Form>
       </Modal>
+
+      {/* Excel import modal */}
+      <ImportarExcelModal
+        show={mostrarImportacion}
+        onHide={() => setMostrarImportacion(false)}
+        campos={["nombre", "ciudad", "direccion", "telefono"]}
+        transformarFila={transformarSedeExcel}
+        onSave={crearSede}
+        onSaved={async () => {
+          await cargarSedes();
+        }}
+      />
     </>
   );
 }

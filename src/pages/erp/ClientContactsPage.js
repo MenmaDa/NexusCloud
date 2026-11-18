@@ -3,26 +3,31 @@ import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import {
   faAddressBook,
   faEdit,
+  faFileExcel,
   faHome,
   faPlus,
-  faTrash
+  faTrash,
 } from "@fortawesome/free-solid-svg-icons";
+
 import {
   Breadcrumb,
   Button,
   Card,
   Form,
   Modal,
-  Table
+  Table,
 } from "@themesberg/react-bootstrap";
 
 import { listarClientes } from "../../services/clienteApi";
+
 import {
   actualizarContactoCliente,
   crearContactoCliente,
   eliminarContactoCliente,
-  listarContactosClientes
+  listarContactosClientes,
 } from "../../services/contactoClienteApi";
+
+import ImportarExcelModal from "../../components/ImportarExcelModal";
 
 const formularioInicial = {
   nombres: "",
@@ -30,7 +35,7 @@ const formularioInicial = {
   cargo: "",
   email: "",
   telefono: "",
-  clienteId: ""
+  clienteId: "",
 };
 
 export default function ClientContactsPage() {
@@ -38,7 +43,10 @@ export default function ClientContactsPage() {
   const [clientes, setClientes] = useState([]);
   const [formulario, setFormulario] = useState(formularioInicial);
   const [contactoEditando, setContactoEditando] = useState(null);
+
   const [mostrarModal, setMostrarModal] = useState(false);
+  const [mostrarImportacion, setMostrarImportacion] = useState(false);
+
   const [cargando, setCargando] = useState(true);
   const [error, setError] = useState("");
 
@@ -49,7 +57,7 @@ export default function ClientContactsPage() {
 
       const [datosContactos, datosClientes] = await Promise.all([
         listarContactosClientes(),
-        listarClientes()
+        listarClientes(),
       ]);
 
       setContactos(datosContactos);
@@ -81,7 +89,7 @@ export default function ClientContactsPage() {
       cargo: contacto.cargo || "",
       email: contacto.email || "",
       telefono: contacto.telefono || "",
-      clienteId: contacto.cliente?.id || ""
+      clienteId: contacto.cliente?.id || "",
     });
 
     setError("");
@@ -93,7 +101,7 @@ export default function ClientContactsPage() {
 
     setFormulario((anterior) => ({
       ...anterior,
-      [name]: value
+      [name]: value,
     }));
   };
 
@@ -118,7 +126,7 @@ export default function ClientContactsPage() {
 
   const borrarContacto = async (contacto) => {
     const confirmar = window.confirm(
-      `¿Deseas eliminar a ${contacto.nombres} ${contacto.apellidos}?`
+      `Do you want to delete ${contacto.nombres} ${contacto.apellidos}?`,
     );
 
     if (!confirmar) return;
@@ -132,35 +140,98 @@ export default function ClientContactsPage() {
     }
   };
 
+  // Convert Excel rows to the contact API format
+  const transformarContactoExcel = (fila) => {
+    const nombres = String(fila["First Name"] ?? "").trim();
+    const apellidos = String(fila["Last Name"] ?? "").trim();
+    const cargo = String(fila.Position ?? "").trim();
+    const email = String(fila.Email ?? "").trim();
+    const telefono = String(fila.Phone ?? "").trim();
+    const clienteNit = String(fila["Client NIT"] ?? "").trim();
+
+    if (!nombres) {
+      throw new Error("First name is required.");
+    }
+
+    if (!apellidos) {
+      throw new Error("Last name is required.");
+    }
+
+    if (!clienteNit) {
+      throw new Error("Client NIT is required.");
+    }
+
+    if (email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+      throw new Error("Invalid email address.");
+    }
+
+    const clientesEncontrados = clientes.filter(
+      (cliente) => String(cliente.nit ?? "").trim() === clienteNit,
+    );
+
+    if (clientesEncontrados.length === 0) {
+      throw new Error(`No active client found with NIT "${clienteNit}".`);
+    }
+
+    if (clientesEncontrados.length > 1) {
+      throw new Error(`Multiple clients found with NIT "${clienteNit}".`);
+    }
+
+    return {
+      nombres,
+      apellidos,
+      cargo,
+      email,
+      telefono,
+      clienteId: clientesEncontrados[0].id,
+    };
+  };
+
   return (
     <>
+      {/* Page header */}
       <div className="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center py-4">
         <div>
           <Breadcrumb className="d-none d-md-inline-block">
             <Breadcrumb.Item href="#/dashboard/overview">
               <FontAwesomeIcon icon={faHome} />
             </Breadcrumb.Item>
+
             <Breadcrumb.Item active>Client Contacts</Breadcrumb.Item>
           </Breadcrumb>
 
           <h2 className="h4">Client Contacts</h2>
+
           <p className="mb-0">
             Manage the people who represent each client company.
           </p>
         </div>
 
-        <Button variant="primary" onClick={abrirCrear}>
-          <FontAwesomeIcon icon={faPlus} className="me-2" />
-          New contact
-        </Button>
+        <div className="d-flex flex-wrap" style={{ gap: "10px" }}>
+          <Button variant="primary" onClick={abrirCrear}>
+            <FontAwesomeIcon icon={faPlus} className="me-2" />
+            New contact
+          </Button>
+
+          <Button
+            variant="outline-primary"
+            onClick={() => setMostrarImportacion(true)}
+            disabled={cargando}
+          >
+            <FontAwesomeIcon icon={faFileExcel} className="me-2" />
+            Import Excel
+          </Button>
+        </div>
       </div>
 
+      {/* Error messages */}
       {error && (
         <div className="alert alert-danger" role="alert">
           {error}
         </div>
       )}
 
+      {/* Contacts table */}
       <Card border="light" className="shadow-sm mb-4">
         <Card.Header>
           <div className="d-flex align-items-center">
@@ -170,7 +241,11 @@ export default function ClientContactsPage() {
         </Card.Header>
 
         <Card.Body className="p-0">
-          <Table responsive hover className="user-table align-items-center mb-0">
+          <Table
+            responsive
+            hover
+            className="user-table align-items-center mb-0"
+          >
             <thead>
               <tr>
                 <th>Contact</th>
@@ -201,10 +276,13 @@ export default function ClientContactsPage() {
                     <td className="fw-bold">
                       {contacto.nombres} {contacto.apellidos}
                     </td>
+
                     <td>{contacto.cliente?.razonSocial || "Not available"}</td>
+
                     <td>{contacto.cargo || "-"}</td>
                     <td>{contacto.email || "-"}</td>
                     <td>{contacto.telefono || "-"}</td>
+
                     <td className="text-end">
                       <Button
                         variant="outline-primary"
@@ -231,6 +309,7 @@ export default function ClientContactsPage() {
         </Card.Body>
       </Card>
 
+      {/* Manual registration modal */}
       <Modal
         as={Modal.Dialog}
         centered
@@ -253,6 +332,7 @@ export default function ClientContactsPage() {
           <Modal.Body>
             <Form.Group className="mb-3">
               <Form.Label>Client</Form.Label>
+
               <Form.Select
                 required
                 name="clienteId"
@@ -272,6 +352,7 @@ export default function ClientContactsPage() {
             <div className="row">
               <Form.Group className="col-md-6 mb-3">
                 <Form.Label>First name</Form.Label>
+
                 <Form.Control
                   required
                   name="nombres"
@@ -282,6 +363,7 @@ export default function ClientContactsPage() {
 
               <Form.Group className="col-md-6 mb-3">
                 <Form.Label>Last name</Form.Label>
+
                 <Form.Control
                   required
                   name="apellidos"
@@ -293,6 +375,7 @@ export default function ClientContactsPage() {
 
             <Form.Group className="mb-3">
               <Form.Label>Position</Form.Label>
+
               <Form.Control
                 name="cargo"
                 value={formulario.cargo}
@@ -303,6 +386,7 @@ export default function ClientContactsPage() {
 
             <Form.Group className="mb-3">
               <Form.Label>Email</Form.Label>
+
               <Form.Control
                 type="email"
                 name="email"
@@ -313,6 +397,7 @@ export default function ClientContactsPage() {
 
             <Form.Group>
               <Form.Label>Phone</Form.Label>
+
               <Form.Control
                 name="telefono"
                 value={formulario.telefono}
@@ -322,10 +407,7 @@ export default function ClientContactsPage() {
           </Modal.Body>
 
           <Modal.Footer>
-            <Button
-              variant="secondary"
-              onClick={() => setMostrarModal(false)}
-            >
+            <Button variant="secondary" onClick={() => setMostrarModal(false)}>
               Cancel
             </Button>
 
@@ -335,6 +417,25 @@ export default function ClientContactsPage() {
           </Modal.Footer>
         </Form>
       </Modal>
+
+      {/* Excel import modal */}
+      <ImportarExcelModal
+        show={mostrarImportacion}
+        onHide={() => setMostrarImportacion(false)}
+        campos={[
+          "nombres",
+          "apellidos",
+          "cargo",
+          "email",
+          "telefono",
+          "clienteId",
+        ]}
+        transformarFila={transformarContactoExcel}
+        onSave={crearContactoCliente}
+        onSaved={async () => {
+          await cargarDatos();
+        }}
+      />
     </>
   );
 }
