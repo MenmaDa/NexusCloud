@@ -50,7 +50,7 @@ export const importarInfraestructura = async (archivo) => {
   formData.append("archivo", archivo);
 
   const response = await apiFetch(
-    "http://localhost:8080/api/infraestructura/importacion",
+    "https://telecooperaciones-production.up.railway.app/api/infraestructura/importacion",
     {
       method: "POST",
       body: formData
