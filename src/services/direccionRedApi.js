@@ -1,6 +1,6 @@
 import { apiFetch } from "./apiFetch";
 
-const BASE_URL = "http://localhost:8080/api/infraestructura";
+const BASE_URL = "https://telecooperaciones-production.up.railway.app/api/infraestructura";
 
 async function manejarRespuesta(response) {
   if (!response.ok) {

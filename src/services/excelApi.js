@@ -1,6 +1,6 @@
 import { apiFetch } from "./apiFetch";
 
-const API_URL = "http://localhost:8080/api/excel";
+const API_URL = "https://telecooperaciones-production.up.railway.app/api/excel";
 
 export async function leerArchivoExcel(archivo, hoja = null) {
   if (!archivo) {

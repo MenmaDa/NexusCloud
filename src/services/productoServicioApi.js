@@ -1,5 +1,5 @@
 import { apiFetch } from "./apiFetch";
-const API_URL = "http://localhost:8080/api/productos-servicios";
+const API_URL = "https://telecooperaciones-production.up.railway.app/api/productos-servicios";
 
 async function manejarRespuesta(respuesta) {
   if (!respuesta.ok) {

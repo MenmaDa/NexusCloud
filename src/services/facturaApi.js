@@ -1,6 +1,6 @@
 import { apiFetch } from "./apiFetch";
 
-const API_URL = "http://localhost:8080/api/facturas";
+const API_URL = "https://telecooperaciones-production.up.railway.app/api/facturas";
 
 async function manejarRespuesta(response) {
   if (!response.ok) {
